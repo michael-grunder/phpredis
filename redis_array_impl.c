@@ -352,7 +352,7 @@ ra_make_array(HashTable *hosts, zval *z_fun, zval *z_dist, HashTable *hosts_prev
 	/* create object */
 	ra = emalloc(sizeof(RedisArray));
 	ra->hosts = ecalloc(count, sizeof(char *));
-	ra->redis = ecalloc(count, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(ra->redis, count);
 	ra->count = 0;
 	ra->z_multi_exec = NULL;
 	ra->index = b_index;
@@ -553,7 +553,7 @@ ra_index_change_keys(const char *cmd, zval *z_keys, zval *z_redis TSRMLS_DC) {
 
 	/* alloc */
 	argc = 1 + zend_hash_num_elements(Z_ARRVAL_P(z_keys));
-    z_args = ecalloc(argc, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
 
 	/* prepare first parameters */
 	ZVAL_STRING(&z_fun, cmd);
@@ -898,7 +898,7 @@ ra_move_zset(const char *key, int key_len, zval *z_from, zval *z_to, long ttl TS
 
 	/* allocate argument array for ZADD */
 	count = zend_hash_num_elements(h_zset_vals);
-    z_zadd_args = ecalloc((1 + 2*count), sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_zadd_args, 2 * count + 1);
 
     ZVAL_STRINGL(&z_zadd_args[0], key, key_len);
 
@@ -1024,7 +1024,7 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 	/* run retrieval command on source */
 	ZVAL_STRING(&z_fun_retrieve, cmd_list[0]);	/* set the command */
 
-    z_retrieve_args = ecalloc(list_count, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_retrieve_args, list_count);
 	/* set the key */
     ZVAL_STRINGL(&z_retrieve_args[0], key, key_len);
 
@@ -1052,7 +1052,7 @@ ra_move_collection(const char *key, int key_len, zval *z_from, zval *z_to,
 	h_set_vals = Z_ARRVAL(z_ret);
 	count = 1 + zend_hash_num_elements(h_set_vals);
 	ZVAL_STRING(&z_fun_sadd, cmd_add[0]);
-    z_sadd_args = ecalloc(count, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_sadd_args, count);
     ZVAL_STRINGL(&z_sadd_args[0], key, key_len);
 
     i = 1;

@@ -16,6 +16,8 @@ typedef smart_str smart_string;
 #define smart_string_append_long(dest, val) smart_str_append_long(dest, val)
 #define smart_string_appendl(dest, src, len) smart_str_appendl(dest, src, len)
 
+#define PHPREDIS_CALLOC_ZVAL(zv, n) zv = ecalloc(n, sizeof(zval_gc_info))
+
 typedef struct {
     short gc;
     size_t len;
@@ -377,6 +379,9 @@ typedef int strlen_t;
 #include <zend_smart_str.h>
 #include <ext/standard/php_smart_string.h>
 typedef size_t strlen_t;
+
+#define PHPREDIS_CALLOC_ZVAL(zv, n) zv = ecalloc(n, sizeof(zval))
+
 #endif
 
 /* NULL check so Eclipse doesn't go crazy */

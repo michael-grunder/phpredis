@@ -959,7 +959,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Make sure we at least have a key, and we can get other args
-    z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
@@ -1067,7 +1067,7 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Allocate args
-    z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
@@ -1494,7 +1494,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Allocate memory for mems+1 so we can have a sentinel
-    z_mems = ecalloc(count + 1, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_mems, count + 1);
 
     // Iterate over our member array
     ZEND_HASH_FOREACH_VAL(ht_arr, z_mem) {
@@ -1710,7 +1710,7 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_string *zstr;
 
     // Allocate space for args, parse them as an array
-    z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
        argc < 3 || Z_TYPE(z_args[0]) != IS_STRING)
     {
@@ -2542,7 +2542,7 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     }
 
     // Grab arguments as an array
-    z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;
@@ -2597,7 +2597,7 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     zend_string *zstr;
 
     if (num < 3) return FAILURE;
-    z_args = ecalloc(num, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, num);
     if (zend_get_parameters_array(ht, num, z_args) == FAILURE) {
         efree(z_args);
         return FAILURE;

@@ -376,7 +376,7 @@ ra_forward_call(INTERNAL_FUNCTION_PARAMETERS, RedisArray *ra, const char *cmd, i
 
 	/* pass call through */
 	ZVAL_STRINGL(&z_fun, cmd, cmd_len); /* method name */
-	z_callargs = ecalloc(argc + 1, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_callargs, argc);
 
 	/* copy args to array */
     i = 0;
@@ -1155,7 +1155,7 @@ PHP_METHOD(RedisArray, del)
     HANDLE_MULTI_EXEC(ra, "DEL");
 
 	/* get all args in z_args */
-	z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
 	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
 		efree(z_args);
 		RETURN_FALSE;

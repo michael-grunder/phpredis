@@ -3172,7 +3172,7 @@ PHP_METHOD(Redis, script) {
 	argc = ZEND_NUM_ARGS();
 
 	/* Allocate an array big enough to store our arguments */
-	z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
 
 	/* Make sure we can grab our arguments, we have a string directive */
 	if (zend_get_parameters_array(ht, argc, z_args) == FAILURE ||
@@ -3596,7 +3596,7 @@ PHP_METHOD(Redis, rawcommand) {
             "Must pass at least one command keyword");
         RETURN_FALSE;
     }
-    z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Internal PHP error parsing arguments");

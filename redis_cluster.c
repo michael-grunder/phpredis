@@ -708,7 +708,7 @@ static int cluster_mkey_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len,
     if (!argc) return -1;
 
     /* Extract our arguments into an array */
-    z_args = ecalloc(argc, sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         return -1;
@@ -2164,7 +2164,7 @@ PHP_METHOD(RedisCluster, watch) {
     ht_dist = cluster_dist_create();
 
     // Allocate args, and grab them
-    z_args = emalloc(sizeof(zval) * argc);
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         efree(z_args);
         cluster_dist_free(ht_dist);
@@ -2429,7 +2429,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     }
 
     /* Allocate an array to process arguments */
-    z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
 
     /* Grab args */
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
@@ -3011,7 +3011,7 @@ PHP_METHOD(RedisCluster, rawcommand) {
             "You must pass at least node information as well as at least a command.");
         RETURN_FALSE;
     }
-    z_args = emalloc(argc * sizeof(zval));
+    PHPREDIS_CALLOC_ZVAL(z_args, argc);
     if (zend_get_parameters_array(ht, argc, z_args) == FAILURE) {
         php_error_docref(NULL TSRMLS_CC, E_WARNING,
             "Internal PHP error parsing method parameters.");
