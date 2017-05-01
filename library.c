@@ -571,8 +571,8 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
     smart_string cmd = {0};
     va_list ap;
     union resparg arg;
-    char *dup;
-    int free;
+    char *dup = NULL;
+    int valfree;
     strlen_t arglen;
 
     va_start(ap, fmt);
@@ -594,16 +594,16 @@ redis_spprintf(RedisSock *redis_sock, short *slot TSRMLS_DC, char **ret, char *k
             case 'k':
                 arg.str = va_arg(ap, char*);
                 arglen = va_arg(ap, strlen_t);
-                free = redis_key_prefix(redis_sock, &arg.str, &arglen);
+                valfree = redis_key_prefix(redis_sock, &arg.str, &arglen);
                 redis_cmd_append_sstr(&cmd, arg.str, arglen);
                 if (slot) *slot = cluster_hash_key(arg.str, arglen);
-                if (free) efree(arg.str);
+                if (valfree) efree(arg.str);
                 break;
             case 'v':
                 arg.zv = va_arg(ap, zval*);
-                free = redis_serialize(redis_sock, arg.zv, &dup, &arglen TSRMLS_CC);
+                valfree = redis_serialize(redis_sock, arg.zv, &dup, &arglen TSRMLS_CC);
                 redis_cmd_append_sstr(&cmd, dup, arglen);
-                if (free) efree(dup);
+                if (valfree) efree(dup);
                 break;
             case 'f':
             case 'F':
