@@ -37,7 +37,6 @@ zend_class_entry *redis_cluster_ce;
 /* Exception handler */
 zend_class_entry *redis_cluster_exception_ce;
 
-static zend_class_entry *spl_rte_ce = NULL;
 /* Handlers for RedisCluster */
 zend_object_handlers RedisCluster_handlers;
 
@@ -253,29 +252,6 @@ static void ht_free_node(zval *data)
     cluster_free_node(node);
 }
 
-/* Initialize/Register our RedisCluster exceptions */
-PHPAPI zend_class_entry *rediscluster_get_exception_base(int root TSRMLS_DC) {
-#if HAVE_SPL
-    if(!root) {
-        if(!spl_rte_ce) {
-            zend_class_entry *pce;
-
-            if ((pce = zend_hash_str_find_ptr(CG(class_table), "runtimeexception", sizeof("runtimeexception") - 1))) {
-                spl_rte_ce = pce;
-                return pce;
-            }
-        } else {
-            return spl_rte_ce;
-        }
-    }
-#endif
-#if (PHP_MAJOR_VERSION == 5) && (PHP_MINOR_VERSION < 2)
-    return zend_exception_get_default();
-#else
-    return zend_exception_get_default(TSRMLS_C);
-#endif
-}
-
 /* Create redisCluster context */
 #if (PHP_MAJOR_VERSION < 7)
 zend_object_value
@@ -454,7 +430,7 @@ void redis_cluster_load(redisCluster *c, char *name, int name_len TSRMLS_DC) {
         } else if (Z_TYPE_P(z_value) == IS_DOUBLE) {
             read_timeout = Z_DVAL_P(z_value);
         } else if (Z_TYPE_P(z_value) == IS_LONG) {
-            timeout = Z_LVAL_P(z_value);
+            read_timeout = Z_LVAL_P(z_value);
         }
     }
 
@@ -613,8 +589,8 @@ static int get_key_val_ht(redisCluster *c, HashTable *ht, HashPosition *ptr,
 	zend_string *zkey;
 	switch (zend_hash_get_current_key_ex(ht, &zkey, &idx, ptr)) {
 		case HASH_KEY_IS_STRING:
-			kv->key_len = zkey->len;
-			kv->key = zkey->val;
+			kv->key_len = ZSTR_LEN(zkey);
+			kv->key = ZSTR_VAL(zkey);
 #endif
             break;
         case HASH_KEY_IS_LONG:
@@ -1101,7 +1077,7 @@ PHP_METHOD(RedisCluster, keys) {
     efree(cmd);
 
     /* Return our keys */
-    RETURN_ZVAL(z_ret, 0, 1);
+    RETURN_ZVAL(z_ret, 1, 0);
 }
 /* }}} */
 
@@ -2011,7 +1987,7 @@ PHP_METHOD(RedisCluster, _masters) {
         add_next_index_zval(z_ret, z_sub);
     }
 
-    RETVAL_ZVAL(z_ret, 0, 1);
+    RETVAL_ZVAL(z_ret, 1, 0);
 }
 
 PHP_METHOD(RedisCluster, _redir) {
@@ -2086,7 +2062,7 @@ PHP_METHOD(RedisCluster, watch) {
         zstr = zval_get_string(&z_args[i]);
 
         // Add this key to our distribution handler
-        if (cluster_dist_add_key(c, ht_dist, zstr->val, zstr->len, NULL) == FAILURE) {
+        if (cluster_dist_add_key(c, ht_dist, ZSTR_VAL(zstr), ZSTR_LEN(zstr), NULL) == FAILURE) {
             zend_throw_exception(redis_cluster_exception_ce,
                 "Can't issue WATCH command as the keyspace isn't fully mapped",
                 0 TSRMLS_CC);
@@ -2240,8 +2216,8 @@ cluster_cmd_get_slot(redisCluster *c, zval *z_arg TSRMLS_DC)
     {
         /* Allow for any scalar here */
         zstr = zval_get_string(z_arg);
-        key = zstr->val;
-        key_len = zstr->len;
+        key = ZSTR_VAL(zstr);
+        key_len = ZSTR_LEN(zstr);
 
         /* Hash it */
         key_free = redis_key_prefix(c->flags, &key, &key_len);
@@ -2357,7 +2333,7 @@ static void cluster_raw_cmd(INTERNAL_FUNCTION_PARAMETERS, char *kw, int kw_len)
     /* Iterate, appending args */
     for(i=1;i<argc;i++) {
         zend_string *zstr = zval_get_string(&z_args[i]);
-        redis_cmd_append_sstr(&cmd, zstr->val, zstr->len);
+        redis_cmd_append_sstr(&cmd, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
         zend_string_release(zstr);
     }
 

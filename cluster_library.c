@@ -998,7 +998,7 @@ static int cluster_set_redirection(redisCluster* c, char *msg, int moved)
 
     // Success, apply it
     c->redir_type = moved ? REDIR_MOVED : REDIR_ASK;
-    strncpy(c->redir_host, host, sizeof(c->redir_host));
+    strncpy(c->redir_host, host, sizeof(c->redir_host) - 1);
     c->redir_host_len = port - host - 1;
     c->redir_slot = (unsigned short)atoi(msg);
     c->redir_port = (unsigned short)atoi(port);
@@ -2036,7 +2036,7 @@ PHP_REDIS_API void cluster_info_resp(INTERNAL_FUNCTION_PARAMETERS, redisCluster 
 
     // Return our array
     if(CLUSTER_IS_ATOMIC(c)) {
-        RETVAL_ZVAL(z_result, 0, 1);
+        RETVAL_ZVAL(z_result, 1, 0);
     } else {
         add_next_index_zval(&c->multi_resp, z_result);
     }
@@ -2074,6 +2074,7 @@ PHP_REDIS_API void cluster_client_list_resp(INTERNAL_FUNCTION_PARAMETERS, redisC
 PHP_REDIS_API zval *cluster_zval_mbulk_resp(INTERNAL_FUNCTION_PARAMETERS,
                                      redisCluster *c, int pull, mbulk_cb cb, zval *z_ret)
 {
+    ZVAL_NULL(z_ret);
     // Pull our next response if directed
     if(pull) {
         if(cluster_check_response(c, &c->reply_type TSRMLS_CC)<0)
@@ -2430,7 +2431,7 @@ int mbulk_resp_loop_zipdbl(RedisSock *redis_sock, zval *z_result,
                 zval zv, *z = &zv;
                 if (redis_unserialize(redis_sock,key,key_len, z TSRMLS_CC)) {
                     zend_string *zstr = zval_get_string(z);
-                    add_assoc_double_ex(z_result, zstr->val, zstr->len, atof(line));
+                    add_assoc_double_ex(z_result, ZSTR_VAL(zstr), ZSTR_LEN(zstr), atof(line));
                     zend_string_release(zstr);
                     zval_dtor(z);
                 } else {

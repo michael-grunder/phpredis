@@ -439,11 +439,11 @@ int redis_zrangebyscore_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_KEY_VAL(ht_opt, idx, zkey, z_ele) {
            /* All options require a string key type */
            if (!zkey) continue;
-
+           ZVAL_DEREF(z_ele);
            /* Check for withscores and limit */
-           if (IS_WITHSCORES_ARG(zkey->val, zkey->len)) {
+           if (IS_WITHSCORES_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey))) {
                *withscores = zval_is_true(z_ele);
-           } else if (IS_LIMIT_ARG(zkey->val, zkey->len) && Z_TYPE_P(z_ele) == IS_ARRAY) {
+           } else if (IS_LIMIT_ARG(ZSTR_VAL(zkey), ZSTR_LEN(zkey)) && Z_TYPE_P(z_ele) == IS_ARRAY) {
                 HashTable *htlimit = Z_ARRVAL_P(z_ele);
                 zval *zoff, *zcnt;
 
@@ -556,8 +556,8 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Process input keys
     ZEND_HASH_FOREACH_VAL(ht_keys, z_ele) {
         zend_string *zstr = zval_get_string(z_ele);
-        char *key = zstr->val;
-        strlen_t key_len = zstr->len;
+        char *key = ZSTR_VAL(zstr);
+        strlen_t key_len = ZSTR_LEN(zstr);
 
         // Prefix key if necissary
         int key_free = redis_key_prefix(redis_sock, &key, &key_len);
@@ -587,7 +587,7 @@ int redis_zinter_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         // Process our weights
         ZEND_HASH_FOREACH_VAL(ht_weights, z_ele) {
             // Ignore non numeric args unless they're inf/-inf
-
+            ZVAL_DEREF(z_ele);
             switch (Z_TYPE_P(z_ele)) {
                 case IS_LONG:
                     redis_cmd_append_sstr_long(&cmdstr, Z_LVAL_P(z_ele));
@@ -674,8 +674,8 @@ int redis_subscribe_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zend_string *zstr = zval_get_string(z_chan);
 
         // Grab channel name, prefix if required
-        key = zstr->val;
-        key_len = zstr->len;
+        key = ZSTR_VAL(zstr);
+        key_len = ZSTR_LEN(zstr);
         key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
         // Add this channel
@@ -856,7 +856,7 @@ int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
 
             /* If we're still on a key, prefix it check slot */
             if (num_keys-- > 0) {
-                redis_cmd_append_sstr_key(&cmdstr, zstr->val, zstr->len, redis_sock, slot);
+                redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr), redis_sock, slot);
 
                 /* If we have been passed a slot, all keys must match */
                 if (slot) {
@@ -868,7 +868,7 @@ int redis_eval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock, char *kw
                     prevslot = *slot;
                 }
             } else {
-                redis_cmd_append_sstr(&cmdstr, zstr->val, zstr->len);
+                redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
             }
 
             zend_string_release(zstr);
@@ -911,7 +911,7 @@ int redis_key_varval_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     /* Append key */
     zend_string *zstr = zval_get_string(&z_args[0]);
-    redis_cmd_append_sstr_key(&cmdstr, zstr->val, zstr->len, redis_sock, slot);
+    redis_cmd_append_sstr_key(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr), redis_sock, slot);
     zend_string_release(zstr);
 
     /* Add members */
@@ -1030,8 +1030,8 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     if(single_array) {
         ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
             zstr = zval_get_string(z_ele);
-            key = zstr->val;
-            key_len = zstr->len;
+            key = ZSTR_VAL(zstr);
+            key_len = ZSTR_LEN(zstr);
             key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
             // Protect against CROSSLOT errors
@@ -1066,8 +1066,8 @@ static int gen_varkey_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         tail = has_timeout ? argc-1 : argc;
         for(i=0;i<tail;i++) {
             zstr = zval_get_string(&z_args[i]);
-            key = zstr->val;
-            key_len = zstr->len;
+            key = ZSTR_VAL(zstr);
+            key_len = ZSTR_LEN(zstr);
 
             key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
@@ -1146,10 +1146,11 @@ int redis_set_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         /* Iterate our option array */
         ZEND_HASH_FOREACH_KEY_VAL(kt, idx, zkey, v) {
+            ZVAL_DEREF(v);
             /* Detect PX or EX argument and validate timeout */
-            if (zkey && IS_EX_PX_ARG(zkey->val)) {
+            if (zkey && IS_EX_PX_ARG(ZSTR_VAL(zkey))) {
                 /* Set expire type */
-                exp_type = zkey->val;
+                exp_type = ZSTR_VAL(zkey);
 
                 /* Try to extract timeout */
                 if (Z_TYPE_P(v) == IS_LONG) {
@@ -1381,6 +1382,7 @@ int redis_hmget_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Iterate over our member array
     ZEND_HASH_FOREACH_VAL(ht_arr, z_mem) {
+        ZVAL_DEREF(z_mem);
         // We can only handle string or long values here
         if ((Z_TYPE_P(z_mem) == IS_STRING && Z_STRLEN_P(z_mem) > 0)
             || Z_TYPE_P(z_mem) == IS_LONG
@@ -1478,8 +1480,8 @@ int redis_hmset_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         // If the hash key is an integer, convert it to a string
         if (zkey) {
-            mem_len = zkey->len;
-            mem = zkey->val;
+            mem_len = ZSTR_LEN(zkey);
+            mem = ZSTR_VAL(zkey);
         } else {
             mem_len = snprintf(kbuf, sizeof(kbuf), "%ld", (long)idx);
             mem = (char*)kbuf;
@@ -1598,8 +1600,8 @@ int redis_bitop_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zstr = zval_get_string(&z_args[i]);
 
         // Grab this key and length
-        key = zstr->val;
-        key_len = zstr->len;
+        key = ZSTR_VAL(zstr);
+        key_len = ZSTR_LEN(zstr);
 
         // Prefix key, append
         key_free = redis_key_prefix(redis_sock, &key, &key_len);
@@ -1699,8 +1701,8 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         // Prefix keys, serialize values
         if(is_keys) {
             zstr = zval_get_string(z_ele);
-            mem = zstr->val;
-            mem_len = zstr->len;
+            mem = ZSTR_VAL(zstr);
+            mem_len = ZSTR_LEN(zstr);
 
             // Key prefix
             mem_free = redis_key_prefix(redis_sock, &mem, &mem_len);
@@ -1720,8 +1722,8 @@ static int redis_gen_pf_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
             zstr = NULL;
             if(!mem_free) {
                 zstr = zval_get_string(z_ele);
-                mem = zstr->val;
-                mem_len = zstr->len;
+                mem = ZSTR_VAL(zstr);
+                mem_len = ZSTR_LEN(zstr);
             }
         }
 
@@ -1793,8 +1795,8 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_VAL(ht_keys, z_key) {
             /* Turn our value into a string if it isn't one */
             zstr = zval_get_string(z_key);
-            key = zstr->val;
-            key_len = zstr->len;
+            key = ZSTR_VAL(zstr);
+            key_len = ZSTR_LEN(zstr);
 
             /* Append this key to our command */
             key_free = redis_key_prefix(redis_sock, &key, &key_len);
@@ -1825,8 +1827,8 @@ int redis_pfcount_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         /* Turn our key into a string if it's a different type */
         zstr = zval_get_string(z_keys);
-        key = zstr->val;
-        key_len = zstr->len;
+        key = ZSTR_VAL(zstr);
+        key_len = ZSTR_LEN(zstr);
         key_free = redis_key_prefix(redis_sock, &key, &key_len);
         redis_cmd_append_sstr(&cmdstr, key, key_len);
 
@@ -2323,8 +2325,8 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Get first argument (the key) as a string
     zstr = zval_get_string(&z_args[0]);
-    arg = zstr->val;
-    arg_len = zstr->len;
+    arg = ZSTR_VAL(zstr);
+    arg_len = ZSTR_LEN(zstr);
 
     // Prefix
     arg_free = redis_key_prefix(redis_sock, &arg, &arg_len);
@@ -2341,7 +2343,7 @@ int redis_hdel_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
     // Iterate through the members we're removing
     for(i=1;i<argc;i++) {
         zstr = zval_get_string(&z_args[i]);
-        redis_cmd_append_sstr(&cmdstr, zstr->val, zstr->len);
+        redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
         zend_string_release(zstr);
     }
 
@@ -2414,8 +2416,8 @@ int redis_zadd_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
     // Prefix our key
     zstr = zval_get_string(&z_args[0]);
-    key = zstr->val;
-    key_len = zstr->len;
+    key = ZSTR_VAL(zstr);
+    key_len = ZSTR_LEN(zstr);
     key_free = redis_key_prefix(redis_sock, &key, &key_len);
 
     // Start command construction
@@ -2539,9 +2541,10 @@ static void get_georadius_opts(HashTable *ht, int *withcoord, int *withdist,
 
     /* Iterate over our argument array, collating which ones we have */
     ZEND_HASH_FOREACH_KEY_VAL(ht, idx, zkey, optval) {
+        ZVAL_DEREF(optval);
         /* If the key is numeric it's a non value option */
         if (zkey) {
-            if (zkey->len == 5 && !strcasecmp(zkey->val, "count") && Z_TYPE_P(optval) == IS_LONG) {
+            if (ZSTR_LEN(zkey) == 5 && !strcasecmp(ZSTR_VAL(zkey), "count") && Z_TYPE_P(optval) == IS_LONG) {
                 *count = Z_LVAL_P(optval);
             }
         } else {
@@ -2752,8 +2755,8 @@ int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         zstr = zval_get_string(z_keys);
 
         /* We may need to prefix our string */
-        key = zstr->val;
-        keylen = zstr->len;
+        key = ZSTR_VAL(zstr);
+        keylen = ZSTR_LEN(zstr);
         keyfree = redis_key_prefix(redis_sock, &key, &keylen);
 
         /* Add key to migrate */
@@ -2775,8 +2778,8 @@ int redis_migrate_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
         ZEND_HASH_FOREACH_VAL(Z_ARRVAL_P(z_keys), z_key) {
             zstr = zval_get_string(z_key);
 
-            key = zstr->val;
-            keylen = zstr->len;
+            key = ZSTR_VAL(zstr);
+            keylen = ZSTR_LEN(zstr);
             keyfree = redis_key_prefix(redis_sock, &key, &keylen);
 
             /* Append the key */
@@ -2926,7 +2929,7 @@ int redis_command_cmd(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock,
 
         ZEND_HASH_FOREACH_VAL(ht_arr, z_ele) {
             zend_string *zstr = zval_get_string(z_ele);
-            redis_cmd_append_sstr(&cmdstr, zstr->val, zstr->len);
+            redis_cmd_append_sstr(&cmdstr, ZSTR_VAL(zstr), ZSTR_LEN(zstr));
             zend_string_release(zstr);
         } ZEND_HASH_FOREACH_END();
 
@@ -3061,9 +3064,9 @@ void redis_prefix_handler(INTERNAL_FUNCTION_PARAMETERS, RedisSock *redis_sock) {
     }
 
     if(redis_sock->prefix != NULL && redis_sock->prefix_len>0) {
-        redis_key_prefix(redis_sock, &key, &key_len);
+        int keyfree = redis_key_prefix(redis_sock, &key, &key_len);
         RETVAL_STRINGL(key, key_len);
-        efree(key);
+        if (keyfree) efree(key);
     } else {
         RETURN_STRINGL(key, key_len);
     }

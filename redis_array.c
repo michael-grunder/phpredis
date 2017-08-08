@@ -112,7 +112,8 @@ redis_array_free(RedisArray *ra)
     zval_dtor(&ra->z_dist);
 
     /* Delete pur commands */
-    zval_dtor(&ra->z_pure_cmds);
+    zend_hash_destroy(ra->pure_cmds);
+    FREE_HASHTABLE(ra->pure_cmds);
 
     /* Free structure itself */
     efree(ra);
@@ -213,9 +214,7 @@ redis_array_get(zval *id TSRMLS_DC)
 #else
         obj = (redis_array_object *)((char *)Z_OBJ_P(id) - XtOffsetOf(redis_array_object, std));
 #endif
-        if (obj->ra) {
-            return obj->ra;
-        }
+        return obj->ra;
     }
     return NULL;
 }
@@ -976,9 +975,7 @@ PHP_METHOD(RedisArray, mget)
         }
 
 		for(i = 0, j = 0; i < argc; ++i) {
-		    if(pos[i] != n) continue;
-
-			z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j++);
+            if (pos[i] != n || (z_cur = zend_hash_index_find(Z_ARRVAL(z_ret), j++)) == NULL) continue;
 
 #if (PHP_MAJOR_VERSION < 7)
 			MAKE_STD_ZVAL(z_tmp);
@@ -995,7 +992,7 @@ PHP_METHOD(RedisArray, mget)
 	array_init(return_value);
 	/* copy temp array in the right order to return_value */
 	for(i = 0; i < argc; ++i) {
-		z_cur = zend_hash_index_find(Z_ARRVAL(z_tmp_array), i);
+        if ((z_cur = zend_hash_index_find(Z_ARRVAL(z_tmp_array), i)) == NULL) continue;
 
 #if (PHP_MAJOR_VERSION < 7)
 		MAKE_STD_ZVAL(z_tmp);
@@ -1056,8 +1053,8 @@ PHP_METHOD(RedisArray, mset)
     ZEND_HASH_FOREACH_KEY_VAL(h_keys, idx, zkey, data) {
         /* If the key isn't a string, make a string representation of it */
         if (zkey) {
-            key_len = zkey->len;
-            key = zkey->val;
+            key_len = ZSTR_LEN(zkey);
+            key = ZSTR_VAL(zkey);
         } else {
             key_len = snprintf(kbuf, sizeof(kbuf), "%lu", idx);
             key = kbuf;
