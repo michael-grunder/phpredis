@@ -776,16 +776,21 @@ $redis->delete(array('key3', 'key4')); /* return 2 */
 _**Description**_: Verify if the specified key exists.
 
 ##### *Parameters*
-*key*
+*keys:*  key1, key2 , ... keyN:  One or more keys
 
 ##### *Return value*
-*BOOL*: If the key exists, return `TRUE`, otherwise return `FALSE`.
+*BOOL*:  If a single key is passed to EXISTS we will return `TRUE` or `FALSE` depending on the result from Redis.
+*LONG*:  If more than one key is passed we will return the number of keys that Redis reports as existing.  Note that you will need to be running Redis 3.0.3 to call this function with multiple keys. 
 
 ##### *Examples*
 ~~~
 $redis->set('key', 'value');
 $redis->exists('key'); /*  TRUE */
 $redis->exists('NonExistingKey'); /* FALSE */
+
+/* Assuming redis >= 3.0.3 */
+for ($i = 1; $i <= 3; $i++) $redis->set("key$i", "val$i");
+$redis->exists('key1', 'key2', 'key3'); /* 3 */
 ~~~
 
 ### incr, incrBy

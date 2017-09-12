@@ -104,7 +104,7 @@ zend_function_entry redis_cluster_functions[] = {
     PHP_ME(RedisCluster, psetex, arginfo_key_expire_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, setnx, arginfo_key_value, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, getset, arginfo_key_value, ZEND_ACC_PUBLIC)
-    PHP_ME(RedisCluster, exists, arginfo_key, ZEND_ACC_PUBLIC)
+    PHP_ME(RedisCluster, exists, arginfo_nkeys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, keys, arginfo_keys, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, type, arginfo_key, ZEND_ACC_PUBLIC)
     PHP_ME(RedisCluster, lpop, arginfo_key, ZEND_ACC_PUBLIC)
@@ -1042,7 +1042,15 @@ PHP_METHOD(RedisCluster, getset) {
 
 /* {{{ proto int RedisCluster::exists(string key) */
 PHP_METHOD(RedisCluster, exists) {
-    CLUSTER_PROCESS_CMD(exists, cluster_long_resp, 1);
+    /* In order to maintain backward compatibility we return a boolean response
+     * in the case of a single argument, and long if passed more than one */
+    if (ZEND_NUM_ARGS() == 1) {
+        CLUSTER_PROCESS_KW_CMD("EXISTS", redis_key_cmd, cluster_1_resp, 1);
+    } else if (ZEND_NUM_ARGS() > 1) {
+        CLUSTER_PROCESS_CMD(exists, cluster_long_resp, 1);
+    } else {
+        zend_wrong_param_count(TSRMLS_C);
+    }
 }
 /* }}} */
 

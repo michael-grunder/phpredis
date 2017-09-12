@@ -199,7 +199,7 @@ static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, renameKey, arginfo_key_newkey, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, renameNx, arginfo_key_newkey, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, getMultiple, arginfo_mget, ZEND_ACC_PUBLIC)
-     PHP_ME(Redis, exists, arginfo_key, ZEND_ACC_PUBLIC)
+     PHP_ME(Redis, exists, arginfo_nkeys, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, delete, arginfo_del, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, incr, arginfo_key, ZEND_ACC_PUBLIC)
      PHP_ME(Redis, incrBy, arginfo_key_value, ZEND_ACC_PUBLIC)
@@ -1143,7 +1143,15 @@ PHP_METHOD(Redis, getMultiple)
  */
 PHP_METHOD(Redis, exists)
 {
-    REDIS_PROCESS_CMD(exists, redis_long_response);
+    /* To maintain backward compatibility, we return a boolean response
+     * if passed a single key and a long if passed more than one */
+    if (ZEND_NUM_ARGS() == 1) {
+        REDIS_PROCESS_KW_CMD("EXISTS", redis_key_cmd, redis_1_response);
+    } else if (ZEND_NUM_ARGS() > 1) {
+        REDIS_PROCESS_CMD(exists, redis_long_response);
+    } else {
+        zend_wrong_param_count(TSRMLS_C);
+    }
 }
 /* }}} */
 

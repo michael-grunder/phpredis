@@ -354,7 +354,7 @@ class Redis_Test extends TestSuite
     public function testRandomKey() {
         for($i = 0; $i < 1000; $i++) {
             $k = $this->redis->randomKey();
-            $this->assertEquals($this->redis->exists($k), 1);
+            $this->assertTrue($this->redis->exists($k) === TRUE);
         }
     }
 
@@ -555,7 +555,7 @@ class Redis_Test extends TestSuite
         $this->redis->incrbyfloat('key',1.8);
         $this->assertEquals(1.8, floatval($this->redis->get('key'))); // convert to float to avoid rounding issue on arm
         $this->redis->setOption(Redis::OPT_PREFIX, '');
-        $this->assertEquals(1, $this->redis->exists('someprefix:key'));
+        $this->assertEquals(TRUE, $this->redis->exists('someprefix:key'));
         $this->redis->del('someprefix:key');
 
     }
@@ -588,9 +588,9 @@ class Redis_Test extends TestSuite
     {
         /* Single key */
         $this->redis->del('key');
-        $this->assertEquals(0, $this->redis->exists('key'));
+        $this->assertEquals(FALSE, $this->redis->exists('key'));
         $this->redis->set('key', 'val');
-        $this->assertEquals(1, $this->redis->exists('key'));
+        $this->assertEquals(TRUE, $this->redis->exists('key'));
 
         /* Add multiple keys */
         $mkeys = Array();
@@ -603,7 +603,6 @@ class Redis_Test extends TestSuite
         }
 
         /* Test passing an array as well as the keys variadic */
-        $this->assertEquals(count($mkeys), $this->redis->exists($mkeys));
         $this->assertEquals(count($mkeys), call_user_func_array(Array($this->redis, 'exists'), $mkeys));
     }
 
@@ -4104,7 +4103,7 @@ class Redis_Test extends TestSuite
         $this->redis->sAdd('k', 'a', 'b', 'c', 'd');
         $this->assertTrue(2 === $this->redis->sRem('k', 'a', 'd'));
         $this->assertTrue(2 === $this->redis->sRem('k', 'b', 'c', 'e'));
-        $this->assertEquals(0, $this->redis->exists('k'));
+        $this->assertEquals(false, $this->redis->exists('k'));
 
         // sismember
         $this->assertTrue(TRUE === $this->redis->sismember('{set}key', $s[0]));
