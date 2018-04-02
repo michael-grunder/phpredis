@@ -73,6 +73,12 @@ PHP_INI_BEGIN()
     PHP_INI_ENTRY("redis.clusters.read_timeout", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.seeds", "", PHP_INI_ALL, NULL)
     PHP_INI_ENTRY("redis.clusters.timeout", "", PHP_INI_ALL, NULL)
+
+    /* redis session */
+    PHP_INI_ENTRY("redis.session.locking_enabled", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_expire", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_retries", "", PHP_INI_ALL, NULL)
+    PHP_INI_ENTRY("redis.session.lock_wait_time", "", PHP_INI_ALL, NULL)
 PHP_INI_END()
 
 /** {{{ Argument info for commands in redis 1.0 */
@@ -225,10 +231,6 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_kscan, 0, 0, 2)
     ZEND_ARG_INFO(0, str_pattern)
     ZEND_ARG_INFO(0, i_count)
 ZEND_END_ARG_INFO()
-
-#ifdef ZTS
-ZEND_DECLARE_MODULE_GLOBALS(redis)
-#endif
 
 static zend_function_entry redis_functions[] = {
      PHP_ME(Redis, __construct, arginfo_void, ZEND_ACC_CTOR | ZEND_ACC_PUBLIC)
@@ -814,6 +816,9 @@ PHP_MINFO_FUNCTION(redis)
     php_info_print_table_start();
     php_info_print_table_header(2, "Redis Support", "enabled");
     php_info_print_table_row(2, "Redis Version", PHP_REDIS_VERSION);
+#ifdef GIT_REVISION
+    php_info_print_table_row(2, "Git revision", "$Id: " GIT_REVISION " $");
+#endif
 #ifdef HAVE_REDIS_IGBINARY
     php_info_print_table_row(2, "Available serializers", "php, igbinary");
 #else
