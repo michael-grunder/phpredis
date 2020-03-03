@@ -1,31 +1,33 @@
 sudo: required
 language: php
 php:
-  - 7.0
-  - 7.1
-  - 7.2
+    #  - 7.0
+    #  - 7.1
+    #  - 7.2
   - 7.3
-  - 7.4
-  - nightly
+    #  - 7.4
+    #  - nightly
 env: CC=gcc
 matrix:
-  allow_failures:
-    - php: 7.3
-      env: CC=clang
-    - php: 7.4
-      env: CC=clang
-    - php: nightly
+    #  allow_failures:
+    #    - php: 7.3
+    #      env: CC=clang
+    #    - php: 7.4
+    #      env: CC=clang
+    #    - php: nightly
   include:
-    - php: 7.0
-      env: CC=clang
-    - php: 7.1
-      env: CC=clang
-    - php: 7.2
-      env: CC=clang
+      #    - php: 7.0
+      #      env: CC=clang
+      #    - php: 7.1
+      #      env: CC=clang
+      #    - php: 7.2
+      #      env: CC=clang
+      #    - php: 7.3
+      #      env: CC=clang
     - php: 7.3
-      env: CC=clang
-    - php: 7.4
-      env: CC=clang
+      env: CC=gcc CXX=g++ USE_32BIT=1 PHP_CUSTOM=maintainer-zts PHP_CONFIGURE_ARGS='--disable-all --enable-maintainer-zts --enable-debug --enable-cgi --enable-session --enable-json'
+      #    - php: 7.4
+      #      env: CC=clang
 addons:
   apt:
     packages:
